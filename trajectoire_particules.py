@@ -2,33 +2,39 @@ import numpy as np
 import pandas as pd
 import math
 import matplotlib.pyplot as plt
-#from affichage_une_particule import affichage_trajectoire, affichage_champs
+
+
 def calcul_parametres(R,G,mu,E,vol, P_load):
     '''
-    Calcul des paramètres extension, longueur de la fissure magmatique, et vitesse du magma à partir des rapports R, G,
-    de la viscosité du magma, de l'élasticité de la croute et du volume de magma.
-    :param R
-    :param G
-    :param viscosite
-    :param rigidite
-    :param volume
-    :return: extension, longueur, vitesse
-    '''
-    #print("Début calcul paramètres")
-    #Rapport entre la décharge et l'extension
-    extension = abs(P_load) * R
-    #G : pas de calcul pour l'instant. Pression exercée par le magma sur la roche
+    Computation of the extension, magmatic crack length, and magma velocity parameters from the R and G ratios,
+    the magma viscosity, the crust elasticity, and the magma volume.
 
-    #Longueur de la remontée
+    Args :
+        R
+        G
+        viscosite
+        rigidite
+        volume
+
+    Return:
+        extension
+        longueur   (length)
+        vitesse   (velocity)
+        ouverture  (opening)
+    '''
+
+    #Ratio unloading décharge/extension
+    extension = abs(P_load) * R
+
+    #length
     longueur3 = (E * vol) / ((1 - 0.25**2)*G*abs(P_load))
-    #print(longueur3)
     longueur = longueur3**(1/3)
 
-    #Vcalitesse
+    #Constant C, velocity
     C = 5 * 10**(-7)
     vitesse = (C * vol * G)/mu
 
-    #Ouverture
+    #Opening
     ouverture = (math.pi * vol) / ( 2 * longueur**2)
 
     return extension, longueur, vitesse, ouverture
@@ -36,20 +42,22 @@ def calcul_parametres(R,G,mu,E,vol, P_load):
 
 def fonction_watanabe(x_min, x_max, z_min, z_max, pas, P_load, rayon_load, extension):
     '''
-    Calcule les champs de contrainte selon les axes xx, zz et xz selon les équations données par watanabe.
+    Computes the stress fields along the xx, zz, and xz axes according to the equations given by Watanabe.
 
-    :param x_min: abscisse minimale
-    :param x_max: abscisse maximale
-    :param z_min: ordonnée minimale
-    :param z_max: ordonnée maximale
-    :param pas: distance entre chaque point abscisse/ordonnée
-    :param P_load: charge appliquée sur la surface, symétrique par rapport à l'axe des ordonnées
-    :param rayon_load: rayon de la charge appliquée
-    :param extension : valeur de l'extension de la caldera
-    :return: mesh_X, mesh_Z, et les champs de contrainte selon les axes xx, zz et xz
+    Args :
+        x_min: minimum abscissa
+        x_max: maximum abscissa
+        z_min: minimum ordinate
+        z_max: maximum ordinate
+        pas: distance between each abscissa/ordinate point
+        P_load: load applied on the surface, symmetric with respect to the ordinate axis
+        rayon_load: radius of the applied load
+        extension: value of the caldera extension
+
+    Return:
+        mesh_X, mesh_Z, and the stress fields along the xx, zz, and xz axes
     '''
 
-    #extension = abs(P_load) * R
     vec_X = np.arange(x_min, x_max, pas)
     vec_Z = np.arange(z_min, z_max, pas)
     mesh_X, mesh_Z = np.meshgrid(vec_X,vec_Z)
@@ -74,16 +82,19 @@ def fonction_watanabe(x_min, x_max, z_min, z_max, pas, P_load, rayon_load, exten
 
 def calcul_sig1_sig3(mesh_X, mesh_Z, sig_xx, sig_zz, sig_xz, pas_vec, G):
     '''
-    Calcule les champs de contrainte maximum et minimum Sigma1 et Sigma3 à partir de Sigma_xx, Sigma_zz,
-    Sigma_xz. Affiche ces champs de vecteurs.
+    Computes the maximum and minimum stress fields Sigma1 and Sigma3 from Sigma_xx, Sigma_zz,
+    Sigma_xz. Displays these vector fields.
 
-    :param mesh_X: meshgrid à partir du vecteur xmin-xmax divisé en un certain nombre de pas
-    :param mesh_Z: meshgrid à partir du vecteur ymin-ymax divisé en un certain nombre de pas
-    :param sig_xx: champs de contrainte selon l'axe xx
-    :param sig_zz: champs de contrainte selon l'axe zz
-    :param sig_xz: champs de contrainte selon l'axe xz
-    :param pas_vec: espacement des vecteurs représentés pour sigma1
-    :return: sig_1, sig_3, u_sig_1, v_sig_1, u_sig_3, v_sig_3, I (les valeurs Sigma_1, Sigma_3, et les coordonnées des vecteurs associés).
+    Args :
+        mesh_X: meshgrid from the xmin-xmax vector divided into a certain number of steps
+        mesh_Z: meshgrid from the ymin-ymax vector divided into a certain number of steps
+        sig_xx: stress field along the xx axis
+        sig_zz: stress field along the zz axis
+        sig_xz: stress field along the xz axis
+        pas_vec: spacing of the vectors displayed for sigma1
+
+    Return:
+        sig_1, sig_3, u_sig_1, v_sig_1, u_sig_3, v_sig_3, I (the Sigma_1, Sigma_3 values, and the coordinates of the associated vectors).
     '''
 
 
@@ -138,29 +149,31 @@ def calcul_sig1_sig3(mesh_X, mesh_Z, sig_xx, sig_zz, sig_xz, pas_vec, G):
     return sig_1, sig_3, u_sig_1, v_sig_1, u_sig_1_eff, v_sig_1_eff, u_sig_3, v_sig_3, mesh_vec
 
 
-def streamplot_trajectoire(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, norme, R, G, vitesse,temps_i):
+def streamplot_trajectoire(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, R, G, vitesse,temps_i):
     '''
-    Affichage de la trajectoire du magma le long du champs de contrainte maximal sigma_1.
-    Extraction des coordonnées des points de la trajectoire et calcul de la longueur maximale de la trajectoire.
-    :param mesh_X: meshgrid à partir du vecteur xmin-xmax divisé en un certain nombre de pas
-    :param mesh_Z: meshgrid à partir du vecteur ymin-ymax divisé en un certain nombre de pas
-    :param u_sig_1: coordonnée u du champs de contrainte maximal
-    :param v_sig_1: coordonnée v du champs de contrainte maximal
-    :param start_point: point de départ de la trajectoire considérée :np.array([[2,3]]). Ordonnée minimale de l'affichage.
-    :param R: valeurs du rapport entre l'extension et la décharge
-    :param G: valeur du rapport entre la pression exercée par le magma et la décharge
-    :param norme: "normalisation" des distances (passage du m au km)
-    :param R : rapport entre l'extension et la décharge
-    :param G : rapport entre la poussée exercée par le magma et la décharge
-    :param vitesse : vitesse de remontée du magma
-    :param pas_temps: Pas de temps voulu entre deux points
-    :return: vec_Xt, vec_Zt, coordonnées des points de la trajectoire du magma.
+    Displays the magma trajectory along the maximum stress field sigma_1.
+    Extracts the coordinates of the trajectory points and computes the maximum length of the trajectory.
+
+    Args :
+        mesh_X: meshgrid from the xmin-xmax vector divided into a certain number of steps
+        mesh_Z: meshgrid from the ymin-ymax vector divided into a certain number of steps
+        u_sig_1: u coordinate of the maximum stress field
+        v_sig_1: v coordinate of the maximum stress field
+        start_point: starting point of the considered trajectory: np.array([[2,3]]). Minimum ordinate of the display.
+        R: values of the ratio between the extension and the discharge
+        G: value of the ratio between the pressure exerted by the magma and the discharge
+        vitesse: magma ascent velocity
+        pas_temps: desired time step between two points
+
+    Return:
+        vec_Xt, vec_Zt, coordinates of the magma trajectory points.
     '''
 
+    #mesh_X, mesh_Z, u_sig_1_eff, v_sig_1_eff, start_point, R, G, vitesse, temps_courant)
     fig1, ax1 = plt.subplots(figsize=(8,7))
-    start = start_point/norme
-    mesh_X_new = mesh_X/norme
-    mesh_Z_new = mesh_Z/norme
+    start = start_point
+    mesh_X_new = mesh_X
+    mesh_Z_new = mesh_Z
     strs = ax1.streamplot(mesh_X_new, mesh_Z_new, u_sig_1, v_sig_1, start_points=start, density=1000)
     plt.title("Trajectoire du magma pour R={}".format(R))
     plt.xlabel("X (km)")
@@ -178,7 +191,7 @@ def streamplot_trajectoire(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, norme,
         vec_coords.append(nt_temps[1])
 
     df_coords = pd.DataFrame(vec_coords)
-    #print('coord', df_coords)
+
     df_coords_new = df_coords.drop(df_coords[(df_coords[1] < start[0][1])].index)
     df_coords_simple = df_coords_new.drop_duplicates()
 
@@ -215,36 +228,37 @@ def streamplot_trajectoire(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, norme,
 
 
 
-def trajectoire_une_particule(start_point, R, G, mu, E, vol, temps_courant, pas_temps, xmin, xmax, zmin, zmax, pas_trajectoire, P_load,
-                                                               rayon_load, pas_vect, norme):
+def trajectoire_une_particule(global_data, grid_data, current_time, x0, z0, R, G, mu, E, vol):
     '''
+    Global computation of a particle's trajectory over a discretized grid, using the given parameters, the Watanabe
+    function, and the streamplot fields.
 
     Args:
-        start_point : point de départ de la particule
-        R, G, mu, E, vol : paramètres de la particules
-        temps_courant : temps début trajectoire
-        pas_temps : pas de temps
-        xmin, xmax : étendue axe abscisses (m)
-        zmin, zmax : étendue axe ordonnées (m)
-        pas_trajectoire : discrétisation de l'espace (m)
-        P_load, rayon_load : données charge ou décharge
-        pas_vect : discrétisation de représentation des vecteurs sigma1 (si besoin)
-        norme : passage du mètres à une autre unité (si besoin). Pas défaut norme = 1
-
+        global_data, grid_data, current_time : description in main
+        x0,z0,R,G,mu,E,vol : particle parameters
     Returns:
-        vec_Xt_eff : coordonnées X trajectoire complète
-        vec_Zt : coordonnée Z trajectoire complète
-        vec_temps_eff : temps depuis le début de l'expérience quand (X,Z) est atteint
-        longueur : longueur maximale du dike
-        ouverture : ouverture du dike
-        vitesse : vitesse de propagation
-
+        vec_Xt_eff: X coordinates of the complete trajectory
+        vec_Zt: Z coordinate of the complete trajectory
+        vec_temps_eff: time since the start of the experiment when (X,Z) is reached
+        longueur: maximum dike length
+        ouverture: dike opening
+        vitesse: propagation velocity
     '''
-    x_min = -30000  # m
-    x_max = 30000  # m
-    z_min = -15000  # m
-    z_max = -1  # m
 
+    #### Global data
+    pas_temps = global_data['step time']
+    P_load = global_data['p_load']
+    rayon_load = global_data['radius load']
+    pas_vect = global_data['step vectors']
+    ### Grid Data
+    xmin = grid_data['xmin']
+    xmax = grid_data['xmax']
+    zmin = grid_data['zmin']
+    zmax = grid_data['zmax']
+    pas_trajectoire = grid_data['discretisation step']
+
+
+    start_point = np.array([[x0, z0]])
     extension, longueur, vitesse, ouverture = calcul_parametres(R, G, mu, E, vol, P_load)
 
 
@@ -256,11 +270,11 @@ def trajectoire_une_particule(start_point, R, G, mu, E, vol, temps_courant, pas_
         mesh_X, mesh_Z, sig_xx, sig_zz, sig_xz, pas_vect, G)
 
     vec_Xt, vec_Xt_eff, vec_Zt, long_magma, vec_temps_eff = streamplot_trajectoire(
-        mesh_X, mesh_Z, u_sig_1_eff, v_sig_1_eff, start_point, norme, R, G, vitesse, temps_courant)
+        mesh_X, mesh_Z, u_sig_1_eff, v_sig_1_eff, start_point, R, G, vitesse, current_time)
 
 
 
-    return vec_Xt_eff, vec_Zt, vec_temps_eff, temps_courant, pas_temps, longueur, ouverture, vitesse
+    return vec_Xt_eff, vec_Zt, vec_temps_eff, current_time, pas_temps, longueur, ouverture, vitesse
 
 
 
