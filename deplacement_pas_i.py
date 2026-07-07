@@ -13,6 +13,23 @@ eps = 1e-14  #
 def forward(x, y, depth, length, width, dip, opening, strike,  slip = 0, rake = 0, nu=0.25):
     '''
     Calculate surface displacements for Okada85 dislocation model
+   Args:
+        x: x-coordinate(s) of the observation point(s), east direction (m)
+        y: y-coordinate(s) of the observation point(s), north direction (m)
+        depth: depth of the fault reference point  (m)
+        length: length of the fault plane along strike (m)
+        width: width of the fault plane along dip  (default = 1000m)
+        dip: dip angle of the fault plane, (rad)
+        opening: tensile opening (dislocation) across the fault plane (m)
+        strike: strike angle of the fault plane, in degrees (converted to radians internally)
+        slip: slip magnitude along the fault plane (used with rake to compute strike-slip and dip-slip components)
+        rake: rake angle of the slip, in degrees (converted to radians internally)
+        nu: Poisson's ratio of the medium
+    Returns:
+        ue: east-component surface displacement at each observation point
+        un: north-component surface displacement at each observation point
+        uz: vertical surface displacement at each observation point
+
     '''
 
     e = x
@@ -217,56 +234,8 @@ def I5(xi, eta, q, dip, nu, R, db):
     return I
 
 
-def calcul_parametres_effectifs_okada(longueur, ouverture, distance_parcourue, G, E, P_load):
-
-    if distance_parcourue < longueur:
-        longueur_okada = distance_parcourue
-        vol_eff = (((1 - 0.25**2)*G*abs(P_load)) * distance_parcourue**3 ) / E
-        print(vol_eff)
-        ouverture_okada = (math.pi * vol_eff) / (2 * longueur_okada**2)
-    else:
-        longueur_okada = longueur
-        ouverture_okada = ouverture
-
-    return longueur_okada, ouverture_okada
 
 
-
-
-
-def liaison_modele_okada(vec_X_haut,vec_X_bas,vec_Z_haut, vec_Z_bas,pas_okada, gmin_x,gmax_x, longueur, opening):   # ,vec_temps, vec_distance, vec_dist_cumu,L):
-
-    grille_x = np.arange(gmin_x, gmax_x, pas_okada)
-    grille_y = np.arange(0, pas_okada, pas_okada)
-    mX, mY = np.meshgrid(grille_x, grille_y)
-
-    ### Calculs du centre entre le haut et la bas de la trajectoire en chaque temps
-    vec_x_c = (vec_X_haut + vec_X_bas)/2
-    #print('vecxc', vec_x_c)
-    vec_z_c = -(vec_Z_haut + vec_Z_bas)/2
-    #print('veczc', vec_z_c)
-    vec_z_c_abs = abs(vec_z_c)
-
-    #nb_points = len(vec_X_haut)
-
-    # Calcul du strike
-    if vec_X_bas >= 0:
-        strike = 180
-    else:
-        strike = 0
-
-    ##Calcul du dip pour chaque temps
-    val_tan = (vec_Z_haut - vec_Z_bas) / (vec_X_haut - vec_X_bas)
-    vec_dip = np.arctan(abs(val_tan))
-
-    #Calcul des vecteurs de déplacement ue, un et uz
-    ux = []
-    uy = []
-    uz = []
-
-    ux, uy, uz = forward((mX - vec_x_c), mY, vec_z_c_abs, longueur, 1000, vec_dip, opening, strike)
-
-    return ux, uy, uz, grille_x, grille_y, mX, mY
 
 
 def une_particule_deplacement_pas_i(X_haut, Z_haut, X_bas, Z_bas, longueur, ouverture, distance_parcourue_i, R, G, mu, E, vol, P_load, pas_okada, xmin, xmax, type_observations):
@@ -294,19 +263,9 @@ def une_particule_deplacement_pas_i(X_haut, Z_haut, X_bas, Z_bas, longueur, ouve
 
     '''
 
-    # if distance_parcourue_i < longueur:
-    #     longueur_okada = distance_parcourue_i
-    #     vol_eff = (((1 - 0.25**2)*G*abs(P_load)) * distance_parcourue_i**3 ) / E
-    #     #print(vol_eff)
-    #     ouverture_okada = (math.pi * vol_eff) / (2 * longueur_okada**2)
-    # else:
-    #     longueur_okada = longueur
-    #     ouverture_okada = ouverture
 
-    #longueur_okada, ouverture_okada
 
     longueur_okada = np.sqrt( (X_haut - X_bas)**2 + (Z_haut - Z_bas)**2 )
-
 
 
     vol_eff = (((1 - 0.25**2)*G*abs(P_load)) * distance_parcourue_i**3 ) / E
@@ -329,8 +288,8 @@ def une_particule_deplacement_pas_i(X_haut, Z_haut, X_bas, Z_bas, longueur, ouve
         mY = np.array([[liste_zeros]])
 
 
-    print("mX", mX)
-    print("mY", mY)
+    #print("mX", mX)
+    #print("mY", mY)
 
     ### Calculs du centre entre le haut et la bas de la trajectoire en chaque temps
     vec_x_c = (X_haut + X_bas) / 2

@@ -3,7 +3,21 @@ import numpy as np
 from scipy.special import logsumexp
 
 def calcul_vraisemblances(Nb_particules, ux_ref, uz_ref, deplacements_ux, deplacements_uz, deplacements_mY, incertitudes, vec_index_p_surface):
+    '''
 
+    Args:
+        Nb_particules:
+        ux_ref: UX displacements of the reference particle
+        uz_ref: UZ displacements of the reference particle
+        deplacements_ux: list of UX displacements of the particles
+        deplacements_uz: list of UZ displacements of the particles
+        deplacements_mY:
+        incertitudes: uncertainties
+        vec_index_p_surface: index of the particles that reached the surface
+
+    Returns:
+
+    '''
     vraisemblances_particules = []
 
     coefficients_particules = []
@@ -97,7 +111,7 @@ def calcul_vraisemblances(Nb_particules, ux_ref, uz_ref, deplacements_ux, deplac
 
 
     ###############Normalisation entre 0 et 3 du vecteur coefficients particules
-    print('coefficients particules', coefficients_particules)
+
     # Extraction des valeurs numériques
     numerical_values = np.array([x for x in coefficients_particules if x != 'S'], dtype=float)
     # Min et Max des valeurs numériques
@@ -128,17 +142,6 @@ def calcul_vraisemblances(Nb_particules, ux_ref, uz_ref, deplacements_ux, deplac
 
 
 
-def calcul_poids(Nb_particules, vraisemblance_particules, vec_index_p_surface):
-    somme_totale = np.sum(vraisemblance_particules)
-
-    poids_particules = []
-    for p in range(Nb_particules):
-        poids_p = vraisemblance_particules[p] / somme_totale
-        poids_particules.append(poids_p)
-
-    print("Somme du vec poids particules", sum(poids_particules))
-
-    return poids_particules
 
 
 def fonction_poids(Nb_particules, ux_ref, uz_ref, deplacements_ux, deplacements_uz, deplacements_mY, matrice_covariance, vec_index_p_surface):
