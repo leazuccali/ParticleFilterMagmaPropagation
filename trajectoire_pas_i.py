@@ -1,16 +1,22 @@
 import numpy as np
+import pandas as pd
 
-from trajectoire_particules import *
+#from trajectoire_particules import *
 import bisect
 def nouvelle_valeur(vec_Xt, vec_Zt, vec_temps, valeur_temps):
     '''
-    Calcule le point situé sur la ligne entre deux points déjà calculés, selon la distance à laquelle le point se situe,
-    pour un pas de temps défini.
-    :param vec_Xt: Vecteur des valeurs X
-    :param vec_Zt: Vecteur des valeurs Z
-    :param vec_temps: Vecteur du temps auquelles correspondent les coordonnées (X,Z)
-    :param valeur_temps: Valeur du temps pour laquelle les coordonnées sont recherchées.
-    :return: nouveau_x, nouveau_z : les coordonnées (X,Z) d'un point à un temps donné.
+    Computes the point located on the line between two already computed points, based on the distance at which the
+    point is located, for a defined time step.
+
+    Args:
+        vec_Xt:Vector of X values
+        vec_Zt:Vector of Z values
+        vec_temps:Vector of the times corresponding to the (X,Z) coordinates
+        valeur_temps:Time value for which the coordinates are sought.
+
+    Returns:
+        nouveau_x, nouveau_z: the (X,Z) coordinates of a point at a given time.
+
     '''
     index_temps = bisect.bisect(vec_temps, valeur_temps)
 
@@ -55,7 +61,23 @@ def nouvelle_valeur(vec_Xt, vec_Zt, vec_temps, valeur_temps):
 
 
 def vecteurs_temps_i(vec_Xt, vec_Zt, vec_temps, nouveau_pas):
+    '''
+    Function to compute the trajectory points below the front at the new_step time step.
 
+    Args:
+        vec_Xt: Vectors of X values
+        vec_Zt: Vector of Z values
+        vec_temps: Vector of the times corresponding to the (X,Z) coordinates
+        nouveau_pas: Time considered
+
+    Returns:
+        vec_Xt_drop_haut: X coordinates of the trajectory up to the front
+        vec_Zt_drop_haut: Z coordinates of the trajectory up to the front
+        vec_temps_drop_haut: times of the trajectory up to the front
+        vec_distance_drop_haut: vector of distances between the trajectory points up to the front
+        vec_distance_parc_drop: vector of cumulative distances between the trajectory points up to the front
+        distance_parcourue_i: distance traveled by the magma since the source
+    '''
     #Calcul des distances entre chaque point et des distance cumulées
     vec_distance_i = (np.diff(vec_Xt) ** 2 + np.diff(vec_Zt) ** 2) ** 0.5
     vec_distance_pas_i = np.insert(vec_distance_i, 0, 0)
@@ -87,62 +109,24 @@ def vecteurs_temps_i(vec_Xt, vec_Zt, vec_temps, nouveau_pas):
 
 
 
-def trajectoire_pas_temps(Xt_eff, Zt, vec_temps_eff, pas_temps, nombre_points, temps_i):
-    '''
-    Calcul de l'ensemble des coordonnées de n points espacés d'un pas de temps régulier.
-
-    :param Xt_eff: Vecteurs des valeurs de X
-    :param Zt: Vecteur des valeurs de Z
-    :param vec_temps_eff: Vecteur du temps auquelles correspondent les coordonnées (X,Z)
-    :param pas_temps: Pas de temps.
-    :param nombre_points: Nombre de points (pas de temps) considérés
-    :return: vec_X_pas, vec_Z_pas, vec_temps_pas, vec_distance_pas, vec_dist_cumu_pas
-    Coordonnées (X,Z) de chaque nouveau point au tempt t. Vecteurs distance entre 2 points et distances cumulées aux points
-    considérés.
-    '''
-
-
-    #Transformer arrays en listes
-    Xt_eff_list = list(Xt_eff)
-    Zt_list = list(Zt)
-    vect_list = list(vec_temps_eff)
-    #Définition du vecteur temps
-    vec_temps_pas = [temps_i, temps_i + pas_temps]
-
-    vec_X_pas = []
-    vec_Z_pas = []
-
-    for val in vec_temps_pas:   #ou vec_temps_eff
-        X_pas, Z_pas, valeur_temps = nouvelle_valeur(Xt_eff_list, Zt_list, vect_list, val)
-        vec_X_pas.append(X_pas)
-        vec_Z_pas.append(Z_pas)
-
-
-    vec_dist = (np.diff(vec_X_pas)**2 + np.diff(vec_Z_pas)**2)**0.5
-    vec_distance_pas = np.insert(vec_dist, 0, 0)
-
-    vec_dist_cumu_pas = np.cumsum(vec_distance_pas)
-    long_magma = np.max(vec_dist_cumu_pas)
-
-    return vec_X_pas, vec_Z_pas, vec_temps_pas, vec_distance_pas, vec_dist_cumu_pas
-
 
 def point_bas(x, z, vec_X, vec_Z, vec_D, vec_DC, L):
     '''
-    Calcul du point minimal d'une trajectoire selon les coordonnées (x,z) du front et selon la longueur L de la remontée
-    magmatique.
-    :param x: Coordonnée X du front.
-    :param z: Coordonnée Z du front
-    :param vec_X: Vecteur des coordonées X de la trajectoire
-    :param vec_Z: Vecteur des coodonnées Z de la trajectoire
-    :param vec_D: Vecteur des distances entre deux points de la trajectoire
-    :param vec_DC: Vecteur des distances cumulées de la trajectoire
-    :param L: Longueur de la remontée magmatique
-    :return: (x_b, z_b) : coordonnées basses de la remontée magmatique.
+    Computes the minimum point of a trajectory based on the (x,z) coordinates of the front and the length L of the
+    magmatic ascent.
+
+    Args:
+        x: X coordinate of the front.
+        z: Z coordinate of the front
+        vec_X: Vector of the trajectory's X coordinates
+        vec_Z: Vector of the trajectory's Z coordinates
+        vec_D: Vector of distances between two points of the trajectory
+        vec_DC: Vector of the trajectory's cumulative distances
+        L: Length of the magmatic ascent
+
+    Returns:
+        (x_b, z_b): lower coordinates of the magmatic ascent.
     '''
-    #i = vec_X.index(x)
-    #i_z = vec_Z.index(z)
-    #print(i)
 
 
     if vec_DC[-1] <= L:
@@ -153,7 +137,7 @@ def point_bas(x, z, vec_X, vec_Z, vec_D, vec_DC, L):
         k = vec_DC[-1] - L    # k différence entre Lon cumulée et L. Distance cumulée " basse " DCB
 
         #On intercale DCB sur la trajectoire vec_X vec_Z.
-        #Pour cela on la place déjà sur vec_DC le vecteur des trajectoires cumuluées
+        #Pour cela on la place déjà sur vec_DC le vecteur des trajectoires cumulées
         index_k = bisect.bisect(vec_DC, k)
 
         indice_moins = index_k - 1
@@ -172,13 +156,17 @@ def point_bas(x, z, vec_X, vec_Z, vec_D, vec_DC, L):
 
 def une_trajectoire_haute_basse(vec_X_haut, vec_Z_haut, vec_X_bas, vec_Z_bas, x):
     '''
-    Extraction des coordonnées d'une remontée magmatique à partir des coordonnées de son front et de son point le plus bas.
-    :param vec_X_haut: Coordonnées X de la trajectoire - du front.
-    :param vec_Z_haut: Coordonnées Z de la trajectoire - du front.
-    :param vec_X_bas: Coordonnées X du bas de la remontée.
-    :param vec_Z_bas: Coordonnées Z du bas de la remontée.
-    :param x: Coordonnée X du front considéré.
-    :return: vecX_coupe, vecZ_coupe : Coordonnées X et Z de la remontée, comprises entre le front et le bas.
+    Extracts the coordinates of a magmatic ascent from the coordinates of its front and its lowest point.
+
+    Args:
+        vec_X_haut: X coordinates of the trajectory - of the front.
+        vec_Z_haut: Z coordinates of the trajectory - of the front.
+        vec_X_bas: X coordinate of the bottom of the ascent.
+        vec_Z_bas: Z coordinate of the bottom of the ascent.
+        x: X coordinate of the considered front.
+
+    Returns:
+        vecX_coupe, vecZ_coupe: X and Z coordinates of the ascent, between the front and the bottom.
     '''
     # Indice de la valeur Xhaute que l'on considère.
     indice_X_haut = vec_X_haut.index(x)
@@ -199,7 +187,6 @@ def une_trajectoire_haute_basse(vec_X_haut, vec_Z_haut, vec_X_bas, vec_Z_bas, x)
 
         vec_X_HB = list(vec_X_HB_ar)
         vec_Z_HB = list(vec_Z_HB_ar)
-        #print(vec_X_HB)
 
         vecX_coupe = []
         vec_indice_X_coupe = []
@@ -209,15 +196,12 @@ def une_trajectoire_haute_basse(vec_X_haut, vec_Z_haut, vec_X_bas, vec_Z_bas, x)
                 indiceX = vec_X_HB.index(valX)
                 vec_indice_X_coupe.append(indiceX)
 
-        #print(vecX_coupe)
-        #print(vec_indice_X_coupe)
 
         vecZ_coupe = []
         for indice in vec_indice_X_coupe:
             val = vec_Z_HB[indice]
             vecZ_coupe.append(val)
 
-        #print(vecZ_coupe)
 
     else:
         ##### Pour x négatif
@@ -255,9 +239,6 @@ def une_trajectoire_haute_basse(vec_X_haut, vec_Z_haut, vec_X_bas, vec_Z_bas, x)
             vecZ_coupe.append(val)
 
 
-
-
-    #return vecX_coupe, vecZ_coupe
     return vecX_coupe, vecZ_coupe
 
 
