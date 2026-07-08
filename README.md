@@ -1,5 +1,5 @@
 README at [Voir le PDF](https://github.com/leazuccali/ParticleFilterMagmaPropagation/blob/PF_V4/README.pdf)
-or download with https://raw.githubusercontent.com/leazuccali/ParticleFilterMagmaPropagation/PF_V4/README.pdf
+or download at https://raw.githubusercontent.com/leazuccali/ParticleFilterMagmaPropagation/PF_V4/README.pdf
 
 All our experiments were performed on 2 machines. Each machine is equipped with 2 Intel Xeon Gold 5220R processors (2.20 GHz), providing 96 CPU cores, and 125 GB of RAM. The operating system is Ubuntu 22.04.5 LTS.
 
