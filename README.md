@@ -15,10 +15,10 @@ BEFORE SIMULATION
 
 * (R, $\gamma$) grids
 
--> To generate independently with creation_grilles_RG.py, $\approx$10 minuts.
+-> To generate independently with creation_grilles_RG.py, $\approx 10$ minutes.
 
 * truth particle : creation_fichier_particule_reference.py
-* a set of n particles : creation_fichier_particule_joblib.py
+* a set of n particles : creation_fichier_particule_joblib.py $\approx 3$ minutes.
 
 -> Can be generate with the independently of directly by running main.py
 
@@ -42,7 +42,7 @@ This code is ready to run the simulation case:
 
 - Truth particle parameters ($x_0=2000, z_0=-8000, R=0.5, \gamma=0.5, \mu=100, E=5.10^9, V=10^8$).
 
-- Test with 100 particles, assimilation window each 5 time_step (5x60=300 seconds), 600 observations regularly spaced, systematic selection.
+- Test with 100 particles, assimilation window each 5 time_step (5x60=300 seconds), 600 observations regularly spaced, systematic selection and 399 $(R,\gamma )$ grid possibilities.
 
 - Time to simulate : $\approx 1$ hour. Memory : $\approx$ 4-5 Go.
 
