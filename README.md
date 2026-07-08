@@ -15,7 +15,7 @@ BEFORE SIMULATION
 
 * (R, $\gamma$) grids
 
--> To generate independently with creation_grilles_RG.py
+-> To generate independently with creation_grilles_RG.py, $\approx$10 minuts.
 
 * truth particle : creation_fichier_particule_reference.py
 * a set of n particles : creation_fichier_particule_joblib.py
