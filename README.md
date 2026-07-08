@@ -1,6 +1,36 @@
-[Voir le PDF](https://github.com/leazuccali/ParticleFilterMagmaPropagation/blob/PF_V4/README.pdf)
+README at [Voir le PDF](https://github.com/leazuccali/ParticleFilterMagmaPropagation/blob/PF_V4/README.pdf)
+or download with https://raw.githubusercontent.com/leazuccali/ParticleFilterMagmaPropagation/PF_V4/README.pdf
 
-https://raw.githubusercontent.com/leazuccali/ParticleFilterMagmaPropagation/PF_V4/README.pdf
+Structure of one simulation
+
+BEFORE SIMULATION
+
+**0. Definition of simulation parameters.** global_data, grid_data, p_reference_data, resampling_data are 5 dictionnaries that defines the simulation. Each dictionnary is describes in the pdf.
+
+**1. Generation of various elements**
+
+* (R, $\gamma$) grids
+
+-> To generate independently with creation_grilles_RG.py
+
+* truth particle : creation_fichier_particule_reference.py
+* a set of n particles : creation_fichier_particule_joblib.py
+
+-> Can be generate with the independently of directly by running main.py
+
+**2. Simulation of propagation**
+
+By running main.py 
+
+Outputs are stored step by step (step_X) in a general folder output_test. 
+
+**3. Results of simulation**
+
+Particle evolution (in output_test) is illustrated with plot_particles_positions.py, genere_animation_gif.py and plot_distribution_values.py.
+
+
+
+
 
 # Fonctionnement du code et description des fonctions principales 
 
