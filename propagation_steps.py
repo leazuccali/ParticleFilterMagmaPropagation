@@ -40,7 +40,7 @@ def copier_fichiers_particule(p, i):
 
 # Fonction pour propager une particule
 def propager_particule(p, i, step_directory, temps_courant, pas_temps):
-    print("Particule", p, "au pas i =", i)
+    #print("Particule", p, "au pas i =", i)
 
     # Récupération des données stockées dans les fichiers d'initialisation
     particule_directory = os.path.join(step_directory, f'particule_{p}')
@@ -386,14 +386,12 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
                    'dossier output' : 'outputdossier'}
 
     Returns:
-        output_data_and_figures
+        output_data_and_figures, output_test
     '''
-
 
     # 1. Récupérer l'heure de début
     heure_debut = datetime.datetime.now()
     print(f"Beginning of simulation : {heure_debut.strftime('%Y-%m-%d %H:%M:%S')}")
-
 
     ##### Récupération des paramètres
     #### Global data
@@ -422,28 +420,33 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
     int_selec = test_data['Assim. window']
     type_selection = test_data['Selection type']
     type_observations = test_data['Observation type']
-    pas = test_data['Observation step (regular case)']
+    pas_regulier = test_data['Observation step (regular case)']
     nobs = test_data['Nb observations (other cases)']
     dossier_output = test_data['dossier output']
 
 
 
 
-    #### Choix du type de selection : systematic,stratified,multinomial, residual
+
+
+
+
+    #### Type de selection
     if type_selection == 'systematic':
         fonction_selection = fonction_selection_systematique
     if type_selection == 'stratified':
         fonction_selection = fonction_selection_stratified
     if type_selection == 'multinomial':
         fonction_selection = fonction_selection_multinomial
-    if type_selection == 'multinomial':
+    if type_selection == 'residual':
         fonction_selection = fonction_selection_residual
 
 
 
-    #### Choix du type d'observations : regulier, normal, random
+
     if type_observations == 'regulier':
-        pas_okada = pas
+        pas_okada = pas_regulier
+
 
     if type_observations == 'normal':
         mu_loi = 0
@@ -453,12 +456,12 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
         x_loi = np.clip(x_loi, xmin, xmax)
 
         pas_okada = x_loi
-        print("X-Coordonnates of observations", pas_okada)
+        print("pas okada", pas_okada)
 
     if type_observations == 'random':
         pas_okada = np.random.randint(xmin, xmax, size=nobs)
         pas_okada = np.sort(pas_okada)
-        print("X-Coordonnates of observations", pas_okada)
+        print("pas_okada", pas_okada)
 
 
 
@@ -482,6 +485,7 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
     step_directory = os.path.join(directory, f'step_{i}')
     os.makedirs(step_directory, exist_ok=True)
 
+    #print("Pas ", i, "phase de propagation")
     print('##########################################################################################################')
     print('##########################################################################################################')
     print("FREE PROPAGATION")
@@ -517,7 +521,6 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
 
     # Données référence
     vec_Xt_ref = sauvegarde_trajectoire_ref['X']
-    print("vec_Xt_ref", vec_Xt_ref)
     vec_Zt_ref = sauvegarde_trajectoire_ref['Z']
     vec_temps_ref = sauvegarde_trajectoire_ref['Temps effectif']
     longueur_ref = sauvegarde_trajectoire_ref['Longueur remontee']
@@ -579,17 +582,10 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
     with open(data_filename_vit, 'w', encoding='utf-8') as fichier:  # Ajout de l'encodage
         json.dump(dico_vitesses_pas_i, fichier, indent=4)
 
-
-
-
-
-
     print("End of free propagation")
     print('##########################################################################################################')
     print('##########################################################################################################')
     print('                       ')
-
-
 
     ##############################################
     ################## SELECTIONS
@@ -597,6 +593,7 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
     print('##########################################################################################################')
     print('##########################################################################################################')
     print('PROPAGATION AND SELECTION')
+
     # Définition du vecteur de sélection
     i = Nb_propag_init
     i_max = Nb_pas_max + 1
@@ -606,6 +603,7 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
     print('##########################################################################################################')
     print('##########################################################################################################')
     print('')
+
     #step_directory_sauvegarde = os.path.join(directory_sauvegarde, f'step_{i}')
     #os.makedirs(step_directory_sauvegarde, exist_ok=True)
 
@@ -619,7 +617,6 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
             '##########################################################################################################')
         print(
             '##########################################################################################################')
-
         # Definition du temps
         temps_courant = i * pas_temps
         vec_pas_selection.append(i)
@@ -670,13 +667,13 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
         vitesse_ref = sauvegarde_trajectoire_ref['Vitesse']
 
         #tems_final_ref = vec_temps_ref[-1]
+        #print("temps_courant", temps_courant)
+        #print("longueur_ref", longueur_ref)
+        #print("vec_Xt_ref min/max", min(vec_Xt_ref), max(vec_Xt_ref))
 
         # Calcul de la trajectoire et des déplacements de référence au pas i
         vecXt_ref, vecZt_ref, trajectoire_x_ref, trajectoire_z_ref, X_haut_ref, Z_haut_ref, X_bas_ref, Z_bas_ref, distance_parcourue_ref = une_trajectoire_pas_i(
             vec_Xt_ref, vec_Zt_ref, vec_temps_ref, temps_courant, pas_temps, longueur_ref)
-
-
-        #print("trajectoire x ref", trajectoire_x_ref)
 
         ux_ref, uz_ref, x_ref, mY_ref, centre_x_ref, centre_z_ref, l_okada_ref, ouv_okada_ref, dip_ref, strike_ref = une_particule_deplacement_pas_i(
             X_haut_ref, Z_haut_ref, X_bas_ref, Z_bas_ref,
@@ -741,7 +738,6 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
         # Propagation et déplacements des particules
         ###########################################################################################################
         print("Step i = ", i, "Propagation of", Nb_particules, "particules")
-
         # Parallélisation du processus pour chaque particule
         results = Parallel(n_jobs=-1)(delayed(propag_deplac_particule)(
             p, i, step_directory, temps_courant, pas_temps, pas_okada, P_load, xmin, xmax, type_observations
@@ -840,8 +836,8 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
         ## Insertion des données dans les fonctions poids et vraisemblance
         #print("avant poids")
         vecteur_vraisemblance_i, vecteur_poids_i, coef_particules, vraisemblances_classiques, vraisemblances_normalisee, coef_normalises, vraisemb_hpnulle = fonction_poids(Nb_particules, ux_p_ref, uz_p_ref, deplacements_ux_i, deplacements_uz_i, deplacements_mY_i, incertitudes, vec_index_p_surface)
-        #print("#####vec vraisemblance i", vecteur_vraisemblance_i, len(vecteur_vraisemblance_i))
-        print("Step i = ", i, "Weights of particles", vecteur_poids_i)
+        #print("#####vec poids i", vecteur_poids_i)
+        #print("Step i = ", i, "Weights of particles", vecteur_poids_i)
 
         sauvegarde_donnes_avant_i = Parallel(n_jobs=-1)(
             delayed(donnes_particule_avant_selec)(p, i, step_directory, vecteur_vraisemblance_i) for p in range(Nb_particules))
@@ -866,14 +862,14 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
         vec_index_particules = fonction_selection(Nb_particules, vecteur_poids_i)
         print("Step i = ", i, "Index particles after selection", vec_index_particules)
 
-        points_centraux_x_i_re, points_centraux_z_i_re, longueurs_okada_i_re, ouvertures_okada_i_re, dips_i_re, strikes_i_re = resampling_bruit(grid_data, test_data, resampling_data, vec_index_particules,
-                                                                                                    point_centraux_x_i, point_centraux_z_i, longueurs_okada_i, ouvertures_okada_i, dips_i, strikes_i)
+        points_centraux_x_i_re, points_centraux_z_i_re, longueurs_okada_i_re, ouvertures_okada_i_re, dips_i_re, strikes_i_re = resampling_bruit(Nb_particules, vec_index_particules,
+                                                                                                    point_centraux_x_i, point_centraux_z_i, longueurs_okada_i, ouvertures_okada_i, dips_i, strikes_i, grid_data, resampling_data)
 
 
 
-        sauv_parametres, sauv_trajectoires = okada_vers_physique(global_data, grid_data, test_data, resampling_data, vec_index_particules, points_centraux_x_i_re,
+        sauv_parametres, sauv_trajectoires = okada_vers_physique(Nb_particules, vec_index_particules, points_centraux_x_i_re,
                         points_centraux_z_i_re, longueurs_okada_i_re, ouvertures_okada_i_re,
-                        dips_i_re, strikes_i_re, temps_courant, i)
+                        dips_i_re, strikes_i_re, temps_courant, i, global_data, grid_data, resampling_data)
 
 
 
@@ -980,8 +976,7 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
         sauvegarder_json(os.path.join(step_directory_sauvegarde, f'sauvegarde_parametres_physiques_apres_{i}.json'),
                          dico_parametres_physiques_apres)
 
-
-        print('END OF STEP i =',i)
+        print('END OF STEP i =', i)
         print(
             '##########################################################################################################')
         print(
@@ -989,19 +984,19 @@ def propagation_step_function(global_data, grid_data, p_reference_data, test_dat
 
     # 2. Fin du calcul
     heure_fin = datetime.datetime.now()
-    #print(f"Fin du calcul : {heure_fin.strftime('%Y-%m-%d %H:%M:%S')}")
+    # print(f"Fin du calcul : {heure_fin.strftime('%Y-%m-%d %H:%M:%S')}")
 
     # 3. Calcul de la durée du calcul
     duree_calcul = heure_fin - heure_debut
-    print(f"End of simulation : {heure_fin.strftime('%Y-%m-%d %H:%M:%S')}.", f"Total duration of simulation : {duree_calcul}")
-
-
+    print(f"End of simulation : {heure_fin.strftime('%Y-%m-%d %H:%M:%S')}.",
+              f"Total duration of simulation : {duree_calcul}")
 
 
 
 
 
 if __name__ == '__main__':
+
 
     ### Global data/parameters - Units : step time (s), Pload (Pa), radius (m), step vectors (m)
     global_data = {'step time': 60, 'p_load': -15000000, 'radius load': 10000, 'step vectors': 400,
@@ -1013,25 +1008,25 @@ if __name__ == '__main__':
     ### Particle reference data/parameters - Units : x0_ref, z0_ref (m) ; R,G (-) ; mu (Pa.s) ; E (Pa) ; Vol (m^3)
     p_reference_data = {'x0_ref': 2000, 'z0_ref': -8000, 'R_ref': 0.5, 'G_ref': 0.5, 'mu_ref': 100,
                         'E_ref': 5 * 10 ** 9,
-                        'V_ref': 10 ** 8, 'Step max': 60}
+                        'V_ref': 10 ** 8, 'Step max': 550}
 
     ### Test data/parameters
     # Selection type : 'systematic', 'stratified','multinomial', 'residual'
     # Observation type : 'regulier', 'normal', 'random'
     # If 'regulier' => Observation step.  If 'normal' or 'random' => Nb observations.
-    test_data = {'Nb particles': 10, 'Assim. window': 5, 'Selection type': 'systematic', 'Observation type': 'regulier',
+    test_data = {'Nb particles': 100, 'Assim. window': 10, 'Selection type': 'systematic',
+                 'Observation type': 'regulier',
                  'Observation step (regular case)': 100, 'Nb observations (other cases)': 0,
-                 'dossier output': "output_7.7.26_t1"}
+                 'dossier output':"/home/zuccalil/WS1-NAS-colddata/zuccalil/output_15.07.26_test_github_t11_200"}
 
-    # "/home/zuccalil/WS1-NAS-colddata/zuccalil/output_6.07.25_test_github"
+
     ### Resampling data
     resampling_data = {'rd_xc_min': -200, 'rd_xc_max': 200,
                        'rd_zc_min': -200, 'rd_zc_max': 200,
-                       'rd_lg_min': 0.5, 'rd_lg_max': 0.5,
+                       'rd_lg_min': 0.5, 'rd_lg_max': 2,
                        'rd_open_min': 0.5, 'rd_open_max': 2,
                        'rd_dip_min': -0.25, 'rd_dip_max': 0.25,
                        'rd_veloc_min': -0.1, 'rd_veloc_max': 0.1,
                        'percentage': 10}
-
 
     propagation_step_function(global_data, grid_data, p_reference_data, test_data, resampling_data)

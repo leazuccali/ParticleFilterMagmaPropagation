@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-
 #from trajectoire_particules import *
 import bisect
 def nouvelle_valeur(vec_Xt, vec_Zt, vec_temps, valeur_temps):
@@ -16,8 +15,8 @@ def nouvelle_valeur(vec_Xt, vec_Zt, vec_temps, valeur_temps):
 
     Returns:
         nouveau_x, nouveau_z: the (X,Z) coordinates of a point at a given time.
-
     '''
+
     index_temps = bisect.bisect(vec_temps, valeur_temps)
 
 
@@ -78,6 +77,7 @@ def vecteurs_temps_i(vec_Xt, vec_Zt, vec_temps, nouveau_pas):
         vec_distance_parc_drop: vector of cumulative distances between the trajectory points up to the front
         distance_parcourue_i: distance traveled by the magma since the source
     '''
+
     #Calcul des distances entre chaque point et des distance cumulées
     vec_distance_i = (np.diff(vec_Xt) ** 2 + np.diff(vec_Zt) ** 2) ** 0.5
     vec_distance_pas_i = np.insert(vec_distance_i, 0, 0)
@@ -109,6 +109,49 @@ def vecteurs_temps_i(vec_Xt, vec_Zt, vec_temps, nouveau_pas):
 
 
 
+# def trajectoire_pas_temps(Xt_eff, Zt, vec_temps_eff, pas_temps, nombre_points, temps_i):
+#     '''
+#         Computes the minimum point of a trajectory based on the (x,z) coordinates of the front and the length L of the
+#         magmatic ascent.
+#
+#         Args:
+#             x: X coordinate of the front.
+#             z: Z coordinate of the front
+#             vec_X: Vector of the trajectory's X coordinates
+#             vec_Z: Vector of the trajectory's Z coordinates
+#             vec_D: Vector of distances between two points of the trajectory
+#             vec_DC: Vector of the trajectory's cumulative distances
+#             L: Length of the magmatic ascent
+#
+#         Returns:
+#             (x_b, z_b): lower coordinates of the magmatic ascent.
+#         '''
+#
+#
+#     #Transformer arrays en listes
+#     Xt_eff_list = list(Xt_eff)
+#     Zt_list = list(Zt)
+#     vect_list = list(vec_temps_eff)
+#     #Définition du vecteur temps
+#     vec_temps_pas = [temps_i, temps_i + pas_temps]
+#
+#     vec_X_pas = []
+#     vec_Z_pas = []
+#
+#     for val in vec_temps_pas:   #ou vec_temps_eff
+#         X_pas, Z_pas, valeur_temps = nouvelle_valeur(Xt_eff_list, Zt_list, vect_list, val)
+#         vec_X_pas.append(X_pas)
+#         vec_Z_pas.append(Z_pas)
+#
+#
+#     vec_dist = (np.diff(vec_X_pas)**2 + np.diff(vec_Z_pas)**2)**0.5
+#     vec_distance_pas = np.insert(vec_dist, 0, 0)
+#
+#     vec_dist_cumu_pas = np.cumsum(vec_distance_pas)
+#     long_magma = np.max(vec_dist_cumu_pas)
+#
+#     return vec_X_pas, vec_Z_pas, vec_temps_pas, vec_distance_pas, vec_dist_cumu_pas
+
 
 def point_bas(x, z, vec_X, vec_Z, vec_D, vec_DC, L):
     '''
@@ -128,6 +171,10 @@ def point_bas(x, z, vec_X, vec_Z, vec_D, vec_DC, L):
         (x_b, z_b): lower coordinates of the magmatic ascent.
     '''
 
+    #i = vec_X.index(x)
+    #i_z = vec_Z.index(z)
+    #print(i)
+
 
     if vec_DC[-1] <= L:
         x_b = vec_X[0]
@@ -137,7 +184,7 @@ def point_bas(x, z, vec_X, vec_Z, vec_D, vec_DC, L):
         k = vec_DC[-1] - L    # k différence entre Lon cumulée et L. Distance cumulée " basse " DCB
 
         #On intercale DCB sur la trajectoire vec_X vec_Z.
-        #Pour cela on la place déjà sur vec_DC le vecteur des trajectoires cumulées
+        #Pour cela on la place déjà sur vec_DC le vecteur des trajectoires cumuluées
         index_k = bisect.bisect(vec_DC, k)
 
         indice_moins = index_k - 1
@@ -168,6 +215,7 @@ def une_trajectoire_haute_basse(vec_X_haut, vec_Z_haut, vec_X_bas, vec_Z_bas, x)
     Returns:
         vecX_coupe, vecZ_coupe: X and Z coordinates of the ascent, between the front and the bottom.
     '''
+
     # Indice de la valeur Xhaute que l'on considère.
     indice_X_haut = vec_X_haut.index(x)
     #Recupération des valeurs Xbasse et Zbasse correspondantes
@@ -187,6 +235,7 @@ def une_trajectoire_haute_basse(vec_X_haut, vec_Z_haut, vec_X_bas, vec_Z_bas, x)
 
         vec_X_HB = list(vec_X_HB_ar)
         vec_Z_HB = list(vec_Z_HB_ar)
+        #print(vec_X_HB)
 
         vecX_coupe = []
         vec_indice_X_coupe = []
@@ -196,12 +245,15 @@ def une_trajectoire_haute_basse(vec_X_haut, vec_Z_haut, vec_X_bas, vec_Z_bas, x)
                 indiceX = vec_X_HB.index(valX)
                 vec_indice_X_coupe.append(indiceX)
 
+        #print(vecX_coupe)
+        #print(vec_indice_X_coupe)
 
         vecZ_coupe = []
         for indice in vec_indice_X_coupe:
             val = vec_Z_HB[indice]
             vecZ_coupe.append(val)
 
+        #print(vecZ_coupe)
 
     else:
         ##### Pour x négatif
@@ -239,6 +291,9 @@ def une_trajectoire_haute_basse(vec_X_haut, vec_Z_haut, vec_X_bas, vec_Z_bas, x)
             vecZ_coupe.append(val)
 
 
+
+
+    #return vecX_coupe, vecZ_coupe
     return vecX_coupe, vecZ_coupe
 
 
@@ -246,23 +301,22 @@ def une_trajectoire_haute_basse(vec_X_haut, vec_Z_haut, vec_X_bas, vec_Z_bas, x)
 
 def une_trajectoire_pas_i(vec_Xt_eff, vec_Zt, vec_temps_eff, temps_courant, pas_temps, longueur):
     '''
-
+    Calculation of the dike position at step i
     Args:
-        vec_Xt_eff: vecteur des coordonnées X trajectoire complète
-        vec_Zt: vecteur coordonnées Z trajectoire complète
-        vec_temps_eff: vecteur du temps mis pas le dike pour atteindre (X,Z)
-        temps_courant: temps au pas i
-        pas_temps: pas temps
-        longueur: longueur maximale du dike
-
+        vec_Xt_eff: vector of X coordinates of the full trajectory
+        vec_Zt: vector of Z coordinates of the full trajectory
+        vec_temps_eff: vector of time taken by the dike to reach (X,Z)
+        temps_courant: time at step i
+        pas_temps: time step
+        longueur: maximum length of the dike
     Returns:
-        trajectoire_x_i : vecteur coordonnées X du dike au moment i
-        trajectoire_z_i : vecteur coordonnées X du dike au moment i
-        X_haut : coordonnées X du front du dike
-        Z_haut : coordonnées Z du front du dike
-        X_bas :  coordonnées X du bas du dike
-        Z_bas : coordonnées Z du bas du dike
-        distance_parcourue_i : distance parcourue par le dike depuis le point de départ
+        trajectoire_x_i: vector of X coordinates of the dike at time i
+        trajectoire_z_i: vector of Z coordinates of the dike at time i
+        X_haut: X coordinate of the dike front
+        Z_haut: Z coordinate of the dike front
+        X_bas: X coordinate of the dike bottom
+        Z_bas: Z coordinate of the dike bottom
+        distance_parcourue_i: distance traveled by the dike since the starting point
 
 
     '''

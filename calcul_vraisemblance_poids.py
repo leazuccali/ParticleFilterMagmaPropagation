@@ -4,20 +4,20 @@ from scipy.special import logsumexp
 
 def calcul_vraisemblances(Nb_particules, ux_ref, uz_ref, deplacements_ux, deplacements_uz, deplacements_mY, incertitudes, vec_index_p_surface):
     '''
+        Args:
+            Nb_particules:
+            ux_ref: UX displacements of the reference particle
+            uz_ref: UZ displacements of the reference particle
+            deplacements_ux: list of UX displacements of the particles
+            deplacements_uz: list of UZ displacements of the particles
+            deplacements_mY:
+            incertitudes: uncertainties
+            vec_index_p_surface: index of the particles that reached the surface
 
-    Args:
-        Nb_particules:
-        ux_ref: UX displacements of the reference particle
-        uz_ref: UZ displacements of the reference particle
-        deplacements_ux: list of UX displacements of the particles
-        deplacements_uz: list of UZ displacements of the particles
-        deplacements_mY:
-        incertitudes: uncertainties
-        vec_index_p_surface: index of the particles that reached the surface
+        Returns:
 
-    Returns:
+        '''
 
-    '''
     vraisemblances_particules = []
 
     coefficients_particules = []
@@ -111,7 +111,7 @@ def calcul_vraisemblances(Nb_particules, ux_ref, uz_ref, deplacements_ux, deplac
 
 
     ###############Normalisation entre 0 et 3 du vecteur coefficients particules
-
+    #print('coefficients particules', coefficients_particules)
     # Extraction des valeurs numériques
     numerical_values = np.array([x for x in coefficients_particules if x != 'S'], dtype=float)
     # Min et Max des valeurs numériques
@@ -144,25 +144,26 @@ def calcul_vraisemblances(Nb_particules, ux_ref, uz_ref, deplacements_ux, deplac
 
 
 
+
 def fonction_poids(Nb_particules, ux_ref, uz_ref, deplacements_ux, deplacements_uz, deplacements_mY, matrice_covariance, vec_index_p_surface):
     '''
-
+    Calculation of likelihoods and weights of particles
     Args:
-        Nb_particules : nombre de particules
-        ux_ref : vecteur déplacements ux observés
-        uz_ref : vecteur déplacements uz observés
-        deplacements_ux : matrice des déplacements ux des n particules
-        deplacements_uz : matrice des déplacements uz des n particules
-        matrice_covariance : bruit associés aux déplacements
-        vec_index_p_surface : dike ayant atteint la surface
+        Nb_particules: number of particles
+        ux_ref: observed ux displacement vector
+        uz_ref: observed uz displacement vector
+        deplacements_ux: matrix of ux displacements for the n particles
+        deplacements_uz: matrix of uz displacements for the n particles
+        matrice_covariance: noise associated with the displacements
+        vec_index_p_surface: dikes that reached the surface
 
     Returns:
-        vec_vraisemblances : vecteur des vraisemblances
-        vecteur_poids : vecteur des poids
-        coef_particules : terme ln(exp(vraisemblance))
-        vraisemblances_classiques : vraisemblances
-        vraisemblances_normalisee : vraisemblances normalisées par la valeur de déplacement observés
-        coef_normalises : terme ln(exp(vraisemblance)) normalisés
+        vec_vraisemblances: vector of likelihoods
+        vecteur_poids: vector of weights
+        coef_particules: ln(exp(likelihood)) term
+        vraisemblances_classiques: classical likelihoods
+        vraisemblances_normalisee: likelihoods normalized by the observed displacement value
+        coef_normalises: normalized ln(exp(likelihood)) term
     '''
 
     vec_vraisemblances, coef_particules, vraisemblances_classiques, vraisemblances_normalisee, coef_normalises, vraisemb_hpnulle = calcul_vraisemblances(Nb_particules, ux_ref, uz_ref, deplacements_ux, deplacements_uz, deplacements_mY, matrice_covariance, vec_index_p_surface)

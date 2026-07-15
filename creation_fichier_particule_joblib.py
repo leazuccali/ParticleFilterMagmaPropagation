@@ -6,9 +6,16 @@ from joblib import Parallel, delayed
 import os
 
 def creation_particules(test_data):
+    '''
+    Creation of N set of particle parameters
+
+    Args :
+        test_data
+    '''
+
+    ## Direction du stockage
 
     Nb_particules = test_data['Nb particles']
-    ## Direction du stockage
 
     directory = "data_initialisation"
     os.makedirs(directory, exist_ok=True)
@@ -41,6 +48,7 @@ def creation_particules(test_data):
 
         sauvegarde_parametres.append(parametres_p)
 
+    #x_0, z_0, R_0, G_0, mu_0, E_0, vol_0
 
     with open('sauvegarde_param_physiques_init.json', 'w') as fichier :
         json.dump(sauvegarde_parametres, fichier, indent = 4)
@@ -50,9 +58,10 @@ def creation_particules(test_data):
 
 
 
-#temps_courant, pas_temps, xmin, xmax, zmin, zmax, pas_trajectoire,P_load, rayon_load, pas_vect
 
-def traiter_particule(p, sauvegarde_param_physiques, global_data, grid_data, current_time ):
+
+def traiter_particule(p, sauvegarde_param_physiques, temps_courant, pas_temps, xmin, xmax, zmin, zmax, pas_trajectoire,
+                      P_load, rayon_load, pas_vect, norme):
     print("Particule", p)
 
     #Création des repetoires et sous-repertoires
@@ -67,7 +76,6 @@ def traiter_particule(p, sauvegarde_param_physiques, global_data, grid_data, cur
     with open(data_filename, 'r') as fichier :
         param_physiques_p = json.load(fichier)
 
-
     # Ouverture des paramètres physiques de la particule p
     #param_physiques_p = sauvegarde_param_physiques[p]
     x_i = param_physiques_p['x_0']
@@ -80,7 +88,8 @@ def traiter_particule(p, sauvegarde_param_physiques, global_data, grid_data, cur
 
     # Trajectoire
     vec_Xt_eff_p, vec_Zt_p, vec_temps_eff_p, temps_courant, pas_temps, longueur_p, ouverture_p, vitesse_p = trajectoire_une_particule(
-        global_data, grid_data, current_time, x_i, z_i, R_i, G_i, mu_i, E_i, vol_i)
+        np.array([[x_i, z_i]]), R_i, G_i, mu_i, E_i, vol_i, temps_courant, pas_temps,
+        xmin, xmax, zmin, zmax, pas_trajectoire, P_load, rayon_load, pas_vect, norme)
 
     dico_trajectoire_p = {
         'Numero': p,
@@ -99,22 +108,35 @@ def traiter_particule(p, sauvegarde_param_physiques, global_data, grid_data, cur
     return dico_trajectoire_p
 
 
-def creation_trajectoires(global_data, grid_data,test_data, current_time):
+def creation_trajectoires(global_data, grid_data, test_data, current_time):
+    '''
+    Creation of N particle trajectories
 
-    # #### Global data
-    # pas_temps = global_data['step time']
-    # P_load = global_data['p_load']
-    # rayon_load = global_data['radius load']
-    # pas_vect = global_data['step vectors']
-    # pas_trajectoire = grid_data['discretisation step']
-    # ### Grid Data
-    # xmin = grid_data['xmin']
-    # xmax = grid_data['xmax']
-    # zmin = grid_data['zmin']
-    # zmax = grid_data['zmax']
-    ### Test data
+    Args:
+        global_data
+        grid_data
+        test_data
+        current_time
+
+    Return:
+        N files with particle data in data_initilisation folder
+    '''
+
     Nb_particules = test_data['Nb particles']
+    #### Paramètres de la grille
+    xmin = grid_data['xmin']  # m
+    xmax = grid_data['xmax'] # m
+    zmin = grid_data['zmin']  # m
+    zmax = grid_data['zmax']  # m
+    pas_trajectoire = grid_data['discretisation step']       ##
+    pas_vect = global_data['step vectors']
+    P_load = global_data['p_load'] # MPa
+    rayon_load = global_data['radius load'] # m
+    norme = 1  # Si norme = 1, alors l'unité est le mètre. Si norme = 1000, alors l'unité est le km.
+    #pas_okada = 100
 
+    current_time = 0  # Initialisation au temps 0
+    pas_temps = global_data['step time']
 
     sauvegarde_param_trajectoires = []
 
@@ -124,7 +146,8 @@ def creation_trajectoires(global_data, grid_data,test_data, current_time):
     # Utilisation de joblib pour paralléliser la boucle
     resultats = Parallel(n_jobs=-1)(
         delayed(traiter_particule)(
-            p, sauvegarde_param_physiques, global_data, grid_data, current_time
+            p, sauvegarde_param_physiques, current_time, pas_temps, xmin, xmax, zmin, zmax, pas_trajectoire, P_load,
+            rayon_load, pas_vect, norme
         ) for p in range(Nb_particules)
     )
 
@@ -134,25 +157,43 @@ def creation_trajectoires(global_data, grid_data,test_data, current_time):
     with open('sauvegarde_param_trajectoires_init.json', 'w') as fichier:
         json.dump(sauvegarde_param_trajectoires, fichier, indent=4)
 
+# Vous devez définir la fonction trajectoire_une_particule ici ou l'importer si elle est définie ailleurs.
+
 
 
 
 if __name__ == '__main__':
-
     ### Global data/parameters - Units : step time (s), Pload (Pa), radius (m), step vectors (m)
     global_data = {'step time': 60, 'p_load': -15000000, 'radius load': 10000, 'step vectors': 400,
-                   'nb free propag': 60}
+                   'nb free propag': 60, 'grid RG nb': 399}
 
     ### Grid data/parameters - Units : m
     grid_data = {'xmin': -30000, 'xmax': 30000, 'zmin': -15000, 'zmax': -1, 'discretisation step': 100}
 
-    test_data = {'Nb particles': 100, 'Assim. window': 5, 'Selection type': 'systematic', 'Observation type': 'regulier',
+    ### Particle reference data/parameters - Units : x0_ref, z0_ref (m) ; R,G (-) ; mu (Pa.s) ; E (Pa) ; Vol (m^3)
+    p_reference_data = {'x0_ref': 2000, 'z0_ref': -8000, 'R_ref': 0.5, 'G_ref': 0.5, 'mu_ref': 100,
+                        'E_ref': 5 * 10 ** 9,
+                        'V_ref': 10 ** 8, 'Step max': 550}
+
+    ### Test data/parameters
+    # Selection type : 'systematic', 'stratified','multinomial', 'residual'
+    # Observation type : 'regulier', 'normal', 'random'
+    # If 'regulier' => Observation step.  If 'normal' or 'random' => Nb observations.
+    test_data = {'Nb particles': 100, 'Assim. window': 10, 'Selection type': 'systematic',
+                 'Observation type': 'regulier',
                  'Observation step (regular case)': 100, 'Nb observations (other cases)': 0,
-                 'dossier output': "/home/zuccalil/WS1-NAS-colddata/zuccalil/output_30.06.25_systematic_100p_fenetre5_600obsregulieres_particulereference_30pourcent"}
+                 'dossier output': "/home/zuccalil/WS1-NAS-colddata/zuccalil/output_14.07.26_test_github_1"}
 
-    #current_time=0
 
+    #Nb_particules = 10
+    #x_0, z_0, R_0, G_0, mu_0, E_0, vol_0 = creation_particules(Nb_particules)
     sauve_parametres = creation_particules(test_data)
+    #print(sauvegarde_particules)
 
-    creation_fichier_trajectoire_X = creation_trajectoires(global_data, grid_data, test_data, 0)
+
+
+
+    creation_fichier_trajectoire_X = creation_trajectoires(global_data, grid_data, test_data, 0)  #, x_0, z_0, R_0, G_0, mu_0, E_0, vol_0)
+    #print(sauvegarde_X)
+
 

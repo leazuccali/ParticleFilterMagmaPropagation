@@ -21,20 +21,23 @@ def calcul_parametres_reech(R,G,mu,E,vol, P_load):
         vitesse   (velocity)
         ouverture  (opening)
     '''
-    # Ratio unloading décharge/extension
-    extension = abs(P_load) * R
 
-    #length
+
+    #Rapport entre la décharge et l'extension
+    extension = abs(P_load) * R
+    #G : pas de calcul pour l'instant. Pression exercée par le magma sur la roche
+
+    #Longueur de la remontée
     longueur3 = (E * vol) / ((1 - 0.25**2)*G*abs(P_load))
-    #print(longueur3)
     longueur = longueur3**(1/3)
 
-    #Constant C, velocity
+    #Vcalitesse
     C = 5 * 10**(-7)
     vitesse = (C * vol * G)/mu
 
-    #Opening
+    #Ouverture
     ouverture = (math.pi * vol) / ( 2 * longueur**2)
+
 
     return extension, longueur, vitesse, ouverture
 
@@ -149,7 +152,7 @@ def calcul_sig1_sig3_reech(mesh_X, mesh_Z, sig_xx, sig_zz, sig_xz, pas_vec, G):
     return sig_1, sig_3, u_sig_1, v_sig_1, u_sig_1_eff, v_sig_1_eff, u_sig_3, v_sig_3, mesh_vec
 
 
-def streamplot_trajectoire_reech(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, R, G, vitesse,temps_i, longueur):
+def streamplot_trajectoire_reech(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, norme, R, G, vitesse,temps_i, longueur):
     '''
     Displays the magma trajectory along the maximum stress field sigma_1.
     Extracts the coordinates of the trajectory points and computes the maximum length of the trajectory.
@@ -170,9 +173,9 @@ def streamplot_trajectoire_reech(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, 
     '''
 
     fig1, ax1 = plt.subplots(figsize=(8,7))
-    start = start_point
-    mesh_X_new = mesh_X
-    mesh_Z_new = mesh_Z
+    start = start_point/norme
+    mesh_X_new = mesh_X/norme
+    mesh_Z_new = mesh_Z/norme
     strs = ax1.streamplot(mesh_X_new, mesh_Z_new, u_sig_1, v_sig_1, start_points=start, density=1000)
     plt.title("Trajectoire du magma pour R={}".format(R))
     plt.xlabel("X (km)")
@@ -180,6 +183,7 @@ def streamplot_trajectoire_reech(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, 
     plt.close(fig1)
 
     segments = strs.lines.get_segments()
+    #print("taille segmeents", len(segments))
 
     vec_coords = []
     for seg in segments:
@@ -190,7 +194,7 @@ def streamplot_trajectoire_reech(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, 
         vec_coords.append(nt_temps[1])
 
     df_coords = pd.DataFrame(vec_coords)
-
+    #print('coord', df_coords)
     df_coords_new = df_coords.drop(df_coords[(df_coords[1] < start[0][1])].index)
     df_coords_simple = df_coords_new.drop_duplicates()
 
@@ -199,16 +203,26 @@ def streamplot_trajectoire_reech(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, 
     vec_Xt = vec_coords_ok[:, 0]
     vec_Zt = vec_coords_ok[:, 1]
 
-
+    #vec_Xt_eff = G * start[0][0] + (1 - G) * vec_Xt
     vec_Xt_eff = vec_Xt
+    #print("nombre de points", len(vec_Xt_eff))
+
+    #print(vec_Xt_eff)
+    #print(vec_Zt)
 
     s = (np.diff(vec_Xt_eff) ** 2 + np.diff(vec_Zt) ** 2) ** 0.5
-
+    # print("s=", s)
+    #print('taille de s =', len(s))
     s_zero = np.insert(s, 0,0)
     s_c = np.cumsum(s_zero)
-
+    #s_c = np.insert(s_c, 0, 0)
+    #print(s_c)
+    #print("taille de s_c=", len(s_c))
 
     long_magma = np.max(s_c)
+    print("La longueur de la trajectoire streamplot du magma est de", long_magma, "m.")
+    #print("nombre de différences =", len(s))
+
 
     vec_temps_eff = []
     vec_temps_eff.append(temps_i)
@@ -220,17 +234,17 @@ def streamplot_trajectoire_reech(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, 
     heure,minute,seconde = sec2hms(vec_temps_eff[-1])
 
 
+
     vec_Xt_eff_l = list(vec_Xt_eff)
     vec_Zt_l = list(vec_Zt)
     vec_temps_l = list(vec_temps_eff)
 
 
 
-    ####################################################################
-    ## Retropropagation : point de départ de la particule
-    ####################################################################
-    df_coords = pd.DataFrame(vec_coords)
 
+    ## Retroprapagation : on cherche le point de départ de la particule
+    df_coords = pd.DataFrame(vec_coords)
+    # print('coord', df_coords)
     df_coords_inf = df_coords.drop(df_coords[(df_coords[1] > start[0][1])].index)
     df_coords_simple_inf = df_coords_inf.drop_duplicates()
 
@@ -239,6 +253,8 @@ def streamplot_trajectoire_reech(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, 
     vec_Xt_inf = vec_coords_inf[:, 0]
     vec_Zt_inf = vec_coords_inf[:, 1]
 
+    #print(vec_Xt_inf[20:], vec_Zt_inf[20:])
+    #Slicing pour inverser l'ordre
     vec_Xt_inf_inv = vec_Xt_inf[::-1]
     vec_Zt_inf_inv = vec_Zt_inf[::-1]
 
@@ -264,6 +280,7 @@ def streamplot_trajectoire_reech(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, 
     vec_Xt_inf_inv_coupe = vec_Xt_inf_inv[:len_vec_temps_inf]
     vec_Zt_inf_inv_coupe = vec_Zt_inf_inv[:len_vec_temps_inf]
     somme_cumulee_inf_coupe = somme_cumulee_inf[:len_vec_temps_inf]
+
 
     point_depart_x_retropropag = vec_Xt_inf_inv_coupe[-1]
     point_depart_z_retropropag = vec_Zt_inf_inv_coupe[-1]
@@ -305,9 +322,11 @@ def streamplot_trajectoire_reech(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, 
     vec_Zt_inf_final = vec_Zt_inf_coupe[:-1]
     vec_temps_inf_final = vec_temps_inf[:-1]
 
+
     vec_Xt_entier = np.concatenate((vec_Xt_inf_final,vec_Xt_eff))
     vec_Zt_entier = np.concatenate((vec_Zt_inf_final, vec_Zt))
     vec_temps_entier = np.concatenate((vec_temps_inf_final,vec_temps_eff))
+
 
 
     # Passage en liste
@@ -315,62 +334,62 @@ def streamplot_trajectoire_reech(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, 
     vec_Zt_entier_l = list(vec_Zt_entier)
     vec_temps_entier_l = list(vec_temps_entier)
 
+    #vec_Xt, vec_Xt_entier_l, vec_Zt_entier_l, long_magma, vec_temps_entier_l, point_depart_x_retropropag, point_depart_z_retropropag
+
     return vec_Xt_eff_l, vec_Zt_l, long_magma, vec_temps_l, point_depart_x_retropropag, point_depart_z_retropropag, vitesse_reech
 
 
 
 
-def trajectoire_une_particule_reech(global_data, grid_data, current_time, x0, z0, R, G, mu, E, vol):
+def trajectoire_une_particule_reech(start_point, R, G, mu, E, vol, temps_courant, pas_temps, xmin, xmax, zmin, zmax, pas_trajectoire, P_load,
+                                                               rayon_load, pas_vect, norme):
     '''
-    Global computation of a particle's trajectory resampled and retropropagated over a discretized grid, using the given parameters, the Watanabe
-    function, and the streamplot fields.
 
-    Args:
-        global_data, grid_data, current_time : description in main
-        x0,z0,R,G,mu,E,vol : particle parameters
-
+   Args:
+        start_point: starting point of the particle
+        R, G, mu, E, vol: particle parameters
+        temps_courant: current time considered
+        pas_temps: time step
+        xmin, xmax: extent of the x-axis (m)
+        zmin, zmax: extent of the z-axis (m)
+        pas_trajectoire: spatial discretization (m)
+        P_load, rayon_load: loading or unloading data
+        pas_vect: discretization for representing sigma1 vectors (if needed)
+        norme: conversion from meters to another unit (if needed). Default norme = 1
     Returns:
-        vec_Xt_eff: X coordinates of the complete trajectory
-        vec_Zt: Z coordinate of the complete trajectory
+        vec_Xt_eff, vec_Zt, vec_temps_eff, temps_courant, pas_temps, longueur, ouverture, vitesse_reech, start_x_retroprop, start_z_retroprog
+        vec_Xt_eff: X coordinates of the full trajectory
+        vec_Zt: Z coordinates of the full trajectory
         vec_temps_eff: time since the start of the experiment when (X,Z) is reached
-        longueur: maximum dike length
-        ouverture: dike opening
-        vitesse: propagation resampled velocity
-        start_x_retroprop: x coordinate of the trajectory's starting point at time 0
-        start_z_retroprog: z coordinate of the trajectory's starting point at time 0
-
+        longueur: maximum length of the dike
+        ouverture: opening of the dike
+        vitesse_reech: propagation velocity
+        start_x_retroprop: x-coordinate of the trajectory's starting point at time 0
+        start_z_retroprog: z-coordinate of the trajectory's starting point at time 0
     '''
 
-
-    #### Global data
-    pas_temps = global_data['step time']
-    P_load = global_data['p_load']
-    rayon_load = global_data['radius load']
-    pas_vect = global_data['step vectors']
-    ### Grid Data
-    xmin = grid_data['xmin']
-    xmax = grid_data['xmax']
-    zmin = grid_data['zmin']
-    zmax = grid_data['zmax']
-    pas_trajectoire = grid_data['discretisation step']
-
-    start_point = np.array([[x0, z0]])
+    x_min = -30000  # m
+    x_max = 30000  # m
+    z_min = -15000  # m
+    z_max = -1  # m
 
     extension, longueur, vitesse, ouverture = calcul_parametres_reech(R, G, mu, E, vol, P_load)
-
+    #print("La longueur de la remontée magmatique est de :", longueur, "m.")
 
     mesh_X, mesh_Z, sig_xx, sig_zz, sig_xz = fonction_watanabe_reech(xmin, xmax, zmin, zmax, pas_trajectoire, P_load,
                                                                rayon_load, extension)
+
+    #aff1 = affichage_champs(x_min, x_max, z_min, z_max, mesh_X, mesh_Z, sig_xx, sig_zz, sig_xz, norme)
 
     sig_1, sig_3, u_sig_1, v_sig_1, u_sig_1_eff, v_sig_1_eff, u_sig_3, v_sig_3, mesh_vec = calcul_sig1_sig3_reech(
         mesh_X, mesh_Z, sig_xx, sig_zz, sig_xz, pas_vect, G)
 
     vec_Xt_eff, vec_Zt, long_magma, vec_temps_eff, start_x_retroprop, start_z_retroprog, vitesse_reech = streamplot_trajectoire_reech(
-        mesh_X, mesh_Z, u_sig_1_eff, v_sig_1_eff, start_point, R, G, vitesse, current_time, longueur)
+        mesh_X, mesh_Z, u_sig_1_eff, v_sig_1_eff, start_point, norme, R, G, vitesse, temps_courant, longueur)
 
 
 
-    return vec_Xt_eff, vec_Zt, vec_temps_eff, current_time, pas_temps, longueur, ouverture, vitesse_reech, start_x_retroprop, start_z_retroprog
+    return vec_Xt_eff, vec_Zt, vec_temps_eff, temps_courant, pas_temps, longueur, ouverture, vitesse_reech, start_x_retroprop, start_z_retroprog
 
 
 

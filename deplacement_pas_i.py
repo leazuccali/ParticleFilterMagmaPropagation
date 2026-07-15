@@ -29,7 +29,6 @@ def forward(x, y, depth, length, width, dip, opening, strike,  slip = 0, rake = 
         ue: east-component surface displacement at each observation point
         un: north-component surface displacement at each observation point
         uz: vertical surface displacement at each observation point
-
     '''
 
     e = x
@@ -234,38 +233,55 @@ def I5(xi, eta, q, dip, nu, R, db):
     return I
 
 
+def calcul_parametres_effectifs_okada(longueur, ouverture, distance_parcourue, G, E, P_load):
+
+    if distance_parcourue < longueur:
+        longueur_okada = distance_parcourue
+        vol_eff = (((1 - 0.25**2)*G*abs(P_load)) * distance_parcourue**3 ) / E
+        print(vol_eff)
+        ouverture_okada = (math.pi * vol_eff) / (2 * longueur_okada**2)
+    else:
+        longueur_okada = longueur
+        ouverture_okada = ouverture
+
+    return longueur_okada, ouverture_okada
+
+
+
+
+
 
 
 
 
 def une_particule_deplacement_pas_i(X_haut, Z_haut, X_bas, Z_bas, longueur, ouverture, distance_parcourue_i, R, G, mu, E, vol, P_load, pas_okada, xmin, xmax, type_observations):
     '''
-
+    Displacement induced by a rectangular source (Okada case), here the source is the magmatic intrusion
     Args:
-        X_haut, Z_haut : coordonnées (X,Z) du front du dike
-        X_bas, Z_bas : coordonnées (X,Z) du bas du dike
-        longueur, ouverture : longueur et ouverture théorique du dike
-        distance_parcourue_i : distance parcourue par le dike depuis le point de départ
-        R, G, mu, E, vol : paramètres de la particule
-        P_load : valeur charge ou décharge
-        xmin, xmax : étendue axe des abscisses
-        pas_okada : discrétisation de la grille
-        type_observations :  'regulier','normal','random'
-
+        X_haut, Z_haut: (X,Z) coordinates of the dike front
+        X_bas, Z_bas: (X,Z) coordinates of the dike bottom
+        longueur, ouverture: theoretical length and opening of the dike
+        distance_parcourue_i: distance traveled by the dike from the starting point
+        R, G, mu, E, vol: particle parameters
+        P_load: loading or unloading value
+        xmin, xmax: extent of the x-axis
+        pas_okada: grid discretization
+        type_observations: 'regulier','normal','random'
     Returns:
-        ux : vecteur déplacement ux associé au dike
-        uz: vecteur déplacement uz associé au dike
-        grille_x : liste des points observés à la surface
-        vec_x_c, vec_z_c : point central entre le haut et le bas du dike
-        longueur_okada, ouverture_okada : longueur et ouverture pour okada
-        vec_dip : valeur du dip
-        strike : 180 si X_bas >=0; 0 sinon
+        ux: ux displacement vector associated with the dike
+        uz: uz displacement vector associated with the dike
+        grille_x: list of observed points at the surface
+        vec_x_c, vec_z_c: central point between the top and bottom of the dike
+        longueur_okada, ouverture_okada: length and opening for Okada
+        vec_dip: dip value
+        strike: 180 if X_bas >= 0; 0 otherwise
 
     '''
 
 
 
     longueur_okada = np.sqrt( (X_haut - X_bas)**2 + (Z_haut - Z_bas)**2 )
+
 
 
     vol_eff = (((1 - 0.25**2)*G*abs(P_load)) * distance_parcourue_i**3 ) / E

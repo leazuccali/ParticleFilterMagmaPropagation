@@ -2,8 +2,7 @@ import numpy as np
 import pandas as pd
 import math
 import matplotlib.pyplot as plt
-
-
+#from affichage_une_particule import affichage_trajectoire, affichage_champs
 def calcul_parametres(R,G,mu,E,vol, P_load):
     '''
     Computation of the extension, magmatic crack length, and magma velocity parameters from the R and G ratios,
@@ -23,18 +22,19 @@ def calcul_parametres(R,G,mu,E,vol, P_load):
         ouverture  (opening)
     '''
 
-    #Ratio unloading décharge/extension
+    #Rapport entre la décharge et l'extension
     extension = abs(P_load) * R
+    #G : pas de calcul pour l'instant. Pression exercée par le magma sur la roche
 
-    #length
+    #Longueur de la remontée
     longueur3 = (E * vol) / ((1 - 0.25**2)*G*abs(P_load))
     longueur = longueur3**(1/3)
 
-    #Constant C, velocity
+    #Vcalitesse
     C = 5 * 10**(-7)
     vitesse = (C * vol * G)/mu
 
-    #Opening
+    #Ouverture
     ouverture = (math.pi * vol) / ( 2 * longueur**2)
 
     return extension, longueur, vitesse, ouverture
@@ -58,6 +58,7 @@ def fonction_watanabe(x_min, x_max, z_min, z_max, pas, P_load, rayon_load, exten
         mesh_X, mesh_Z, and the stress fields along the xx, zz, and xz axes
     '''
 
+    #extension = abs(P_load) * R
     vec_X = np.arange(x_min, x_max, pas)
     vec_Z = np.arange(z_min, z_max, pas)
     mesh_X, mesh_Z = np.meshgrid(vec_X,vec_Z)
@@ -149,7 +150,7 @@ def calcul_sig1_sig3(mesh_X, mesh_Z, sig_xx, sig_zz, sig_xz, pas_vec, G):
     return sig_1, sig_3, u_sig_1, v_sig_1, u_sig_1_eff, v_sig_1_eff, u_sig_3, v_sig_3, mesh_vec
 
 
-def streamplot_trajectoire(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, R, G, vitesse,temps_i):
+def streamplot_trajectoire(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, norme, R, G, vitesse,temps_i):
     '''
     Displays the magma trajectory along the maximum stress field sigma_1.
     Extracts the coordinates of the trajectory points and computes the maximum length of the trajectory.
@@ -169,11 +170,10 @@ def streamplot_trajectoire(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, R, G, 
         vec_Xt, vec_Zt, coordinates of the magma trajectory points.
     '''
 
-    #mesh_X, mesh_Z, u_sig_1_eff, v_sig_1_eff, start_point, R, G, vitesse, temps_courant)
     fig1, ax1 = plt.subplots(figsize=(8,7))
-    start = start_point
-    mesh_X_new = mesh_X
-    mesh_Z_new = mesh_Z
+    start = start_point/norme
+    mesh_X_new = mesh_X/norme
+    mesh_Z_new = mesh_Z/norme
     strs = ax1.streamplot(mesh_X_new, mesh_Z_new, u_sig_1, v_sig_1, start_points=start, density=1000)
     plt.title("Trajectoire du magma pour R={}".format(R))
     plt.xlabel("X (km)")
@@ -191,7 +191,7 @@ def streamplot_trajectoire(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, R, G, 
         vec_coords.append(nt_temps[1])
 
     df_coords = pd.DataFrame(vec_coords)
-
+    #print('coord', df_coords)
     df_coords_new = df_coords.drop(df_coords[(df_coords[1] < start[0][1])].index)
     df_coords_simple = df_coords_new.drop_duplicates()
 
@@ -228,14 +228,19 @@ def streamplot_trajectoire(mesh_X, mesh_Z, u_sig_1, v_sig_1, start_point, R, G, 
 
 
 
-def trajectoire_une_particule(global_data, grid_data, current_time, x0, z0, R, G, mu, E, vol):
+def trajectoire_une_particule(start_point, R, G, mu, E, vol, temps_courant, pas_temps, xmin, xmax, zmin, zmax, pas_trajectoire, P_load,
+                                                               rayon_load, pas_vect, norme):
     '''
     Global computation of a particle's trajectory over a discretized grid, using the given parameters, the Watanabe
     function, and the streamplot fields.
 
     Args:
-        global_data, grid_data, current_time : description in main
-        x0,z0,R,G,mu,E,vol : particle parameters
+        start_point, R, G, mu, E, vol : particle parameters
+        temps_courant : current step time
+        pas_temps : step time (in global_data dictionary)
+        xmin, xmax, zmin, zmax, pas_trajectoire : grid parameters in grid_data dictionary
+        P_load, rayon_load, pas_vect : global data test in global_data dictionary
+        norme : norme
     Returns:
         vec_Xt_eff: X coordinates of the complete trajectory
         vec_Zt: Z coordinate of the complete trajectory
@@ -245,20 +250,11 @@ def trajectoire_une_particule(global_data, grid_data, current_time, x0, z0, R, G
         vitesse: propagation velocity
     '''
 
-    #### Global data
-    pas_temps = global_data['step time']
-    P_load = global_data['p_load']
-    rayon_load = global_data['radius load']
-    pas_vect = global_data['step vectors']
-    ### Grid Data
-    xmin = grid_data['xmin']
-    xmax = grid_data['xmax']
-    zmin = grid_data['zmin']
-    zmax = grid_data['zmax']
-    pas_trajectoire = grid_data['discretisation step']
+    x_min = -30000  # m
+    x_max = 30000  # m
+    z_min = -15000  # m
+    z_max = -1  # m
 
-
-    start_point = np.array([[x0, z0]])
     extension, longueur, vitesse, ouverture = calcul_parametres(R, G, mu, E, vol, P_load)
 
 
@@ -270,11 +266,11 @@ def trajectoire_une_particule(global_data, grid_data, current_time, x0, z0, R, G
         mesh_X, mesh_Z, sig_xx, sig_zz, sig_xz, pas_vect, G)
 
     vec_Xt, vec_Xt_eff, vec_Zt, long_magma, vec_temps_eff = streamplot_trajectoire(
-        mesh_X, mesh_Z, u_sig_1_eff, v_sig_1_eff, start_point, R, G, vitesse, current_time)
+        mesh_X, mesh_Z, u_sig_1_eff, v_sig_1_eff, start_point, norme, R, G, vitesse, temps_courant)
 
 
 
-    return vec_Xt_eff, vec_Zt, vec_temps_eff, current_time, pas_temps, longueur, ouverture, vitesse
+    return vec_Xt_eff, vec_Zt, vec_temps_eff, temps_courant, pas_temps, longueur, ouverture, vitesse
 
 
 
