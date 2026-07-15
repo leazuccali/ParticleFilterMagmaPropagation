@@ -22,7 +22,7 @@ if __name__ == '__main__':
     test_data = {'Nb particles': 100, 'Assim. window': 10, 'Selection type': 'systematic',
                  'Observation type': 'regulier',
                  'Observation step (regular case)': 100, 'Nb observations (other cases)': 0,
-                 'dossier output': "output_test_github"}
+                 'dossier output': "output_test"}
 
 
     ### Resampling data
