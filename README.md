@@ -34,7 +34,7 @@ AFTER SIMULATION
 
 **3. Results of simulation**
 
-Particle evolution (in output_test) is illustrated with plot_particles_positions.py, genere_animation_gif.py and plot_distribution_values.py.
+Particle evolution (in output_test_github) is illustrated with plot_particles_positions.py, genere_animation_gif.py and plot_distribution_values.py.
 
 
 -----------------------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ Simulation parameters definition :
                    'dossier output': "output_test }
 
 ### Resampling data
-    resampling_data = {'rd_xc_min': -500, 'rd_xc_max': 500,
+    resampling_data = {'rd_xc_min': -200, 'rd_xc_max': 200,
                        'rd_zc_min': -200, 'rd_zc_max': 200,
                        'rd_lg_min': 0.5, 'rd_lg_max': 0.5,
                        'rd_open_min': 0.5, 'rd_open_max': 2,
